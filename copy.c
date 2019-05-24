@@ -32,23 +32,6 @@ int main(int argc, char const *argv[]) {
       "   %s --d\n", argv[NAME], argv[NAME], argv[NAME], argv[NAME],
       argv[NAME], argv[NAME], argv[NAME]);
       return 0;
-/*
-
-usage:
- $name [-r|--recursive] [-l|--lowercase]|[-s|--uppercase] [-h|--help] <names>
-
-  Change to uppercase or lowercase the filenames given by arguments
-
-$name correct syntax examples:
- $name -l filename.txt
- $name -r --uppercase directory
- $name --help
-
-$name incorrect syntax example:
- $name -d
-
-*/
-
     } else {
       /* Returns error code 2 which menas bad option */
       printf("Bad option, see help: %s -h\n", argv[NAME]);
