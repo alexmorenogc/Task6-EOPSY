@@ -11,6 +11,8 @@
 #define INFILE 2
 #define OUTFILE 3
 
+#define BUFFERSIZE 1024
+
 
 int help(char const *name) {
   printf("usage:\n"
@@ -33,6 +35,27 @@ int error_msg(char *message, char const *name, int error_code) {
   return error_code;
 }
 
+int m_option (char const *infile, char const *outfile) {
+  int descriptorIn, descriptorOut;
+  char buffer[BUFFERSIZE];
+  int numbytes;
+
+  /* Opening files */
+  descriptorIn = open(infile, O_RDONLY);
+  descriptorOut = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0700);
+
+  /* Copying files */
+  while ((numbytes = read(descriptorIn, &buffer, sizeof(char))) > 0){
+    write(descriptorOut, &buffer, numbytes);
+  }
+
+  /* Closing files */
+  close(descriptorIn);
+  close(descriptorOut);
+
+  return 0;
+}
+
 int main(int argc, char const *argv[]) {
   if (argc < 2) {
     /* Returns error code 1 which means no options given. */
@@ -53,14 +76,25 @@ int main(int argc, char const *argv[]) {
       return help(argv[NAME]);
       */
     }
-
+    /* Checking too many arguments (no more than 2 files) */
     if (argc > 4 && strcmp(argv[OPTIONS],"-m") == 0 ||
         argc > 3 && strcmp(argv[OPTIONS],"-m") != 0) {
       /* Returns error code 3 which means too many arguments */
       return error_msg("Too many arguments winyo", argv[NAME], 3);
     }
-    for (int i = 0; i < argc; i++) {
-      printf("arguments: %s\n", argv[i]);
+
+    if (strcmp(argv[OPTIONS],"-m") == 0) {
+      /* use of read and write */
+      m_option(argv[INFILE],argv[OUTFILE]);
+    } else {
+      /*
+
+      Not implemented yet
+
+      */
+      for (int i = 0; i < argc; i++) {
+        printf("arguments: %s\n", argv[i]);
+      }
     }
   }
   return 0;
