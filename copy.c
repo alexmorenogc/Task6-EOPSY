@@ -45,9 +45,19 @@ int main(int argc, char const *argv[]) {
       return error_msg("Bad option", argv[NAME], 2);
     }
   } else {
+    /* It is possible to do -h and more arguments, so we checked again */
     if (strcmp(argv[OPTIONS],"-h") == 0 || strcmp(argv[OPTIONS],"--help") == 0) {
-      /* Returns error code 2 which menas bad option */
+      /* Returns error code 2 which means bad option */
       return error_msg("Bad option", argv[NAME], 2);
+      /* Another way could be, showing help and not error_msg:
+      return help(argv[NAME]);
+      */
+    }
+
+    if (argc > 4 && strcmp(argv[OPTIONS],"-m") == 0 ||
+        argc > 3 && strcmp(argv[OPTIONS],"-m") != 0) {
+      /* Returns error code 3 which means too many arguments */
+      return error_msg("Too many arguments winyo", argv[NAME], 3);
     }
     for (int i = 0; i < argc; i++) {
       printf("arguments: %s\n", argv[i]);
