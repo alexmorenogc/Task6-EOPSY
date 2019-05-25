@@ -47,14 +47,22 @@ int copy_read_write (int fd_from, int fd_to) {
 }
 
 int copy_mmap(int fd_from, int fd_to) {
-  char *src, *dest;
+  void *src, *dest;
   size_t filesize;
 
   filesize = lseek(fd_from, 0, SEEK_END);
+  lseek(fd_to, filesize - 1, SEEK_SET);
+  write(fd_to, '\0', 1);
 
-  src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0);
+  if ((src = mmap(0, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0)) == (void *) -1) {
+    error_msg("Error mapping in file","copy",4);
+  }
+  //src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0);
   ftruncate(fd_to, filesize);
-  dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0);
+  if ((dest = mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0)) == (void *) -1) {
+    error_msg("Error mapping in file","copy",4);
+  }
+  //dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0);
 
   memcpy(dest, src, filesize);
 
