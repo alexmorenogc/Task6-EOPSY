@@ -46,37 +46,21 @@ int copy_read_write (int fd_from, int fd_to) {
   return 0;
 }
 
-int copy_mmap(char fd_from, char fd_to) {
-  /*
-  Not implemented yet
-  */
-
-  int sfd, dfd;
+int copy_mmap(int fd_from, int fd_to) {
   char *src, *dest;
   size_t filesize;
 
-  /* SOURCE */
-  sfd = open("hello.c", O_RDONLY);
-  filesize = lseek(sfd, 0, SEEK_END);
+  filesize = lseek(fd_from, 0, SEEK_END);
 
-  src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, sfd, 0);
-
-  /* DESTINATION */
-  dfd = open("dest", O_RDWR | O_CREAT, 0666);
-
-  ftruncate(dfd, filesize);
-
-  dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, dfd, 0);
-
-  /* COPY */
+  src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0);
+  ftruncate(fd_to, filesize);
+  dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0);
 
   memcpy(dest, src, filesize);
 
   munmap(src, filesize);
   munmap(dest, filesize);
 
-  close(sfd);
-  close(dfd);
 
   return 0;
 }
@@ -111,8 +95,9 @@ int main(int argc, char *argv[]) {
       /* Returns error code 3 which means too many arguments */
       return error_msg("Too many arguments winyo", argv[NAME], 3);
     }
-
+    /* Both file descriptors */
     int fd_from, fd_to;
+
     /* Opening files */
     fd_from = open(argv[INFILE], O_RDONLY);
     fd_to = open(argv[OUTFILE], O_WRONLY|O_CREAT|O_TRUNC, 0700);
@@ -122,7 +107,7 @@ int main(int argc, char *argv[]) {
       copy_read_write(fd_from,fd_to);
     } else {
       /* use of nmap */
-      //copy_mmap(argv[INFILE],argv[OUTFILE]);
+      copy_mmap(fd_from,fd_to);
     }
 
     /* Closing files */
