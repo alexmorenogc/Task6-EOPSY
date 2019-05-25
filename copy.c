@@ -14,7 +14,7 @@
 #define BUFFERSIZE 1024
 
 
-int help(char const *name) {
+int help(char *name) {
   printf("usage:\n"
   " %s  [-h|--help] [-m] <file_name> <new_file_name>\n"
   "\n"
@@ -30,19 +30,19 @@ int help(char const *name) {
   return 0;
 }
 
-int error_msg(char *message, char const *name, int error_code) {
+int error_msg(char *message, char *name, int error_code) {
   printf("%s, see help: %s -h\n", message, name);
   return error_code;
 }
 
-int m_option (char const *infile, char const *outfile) {
+int copy_read_write (char *fd_from, char *fd_to) {
   int descriptorIn, descriptorOut;
   char buffer[BUFFERSIZE];
   int numbytes;
 
   /* Opening files */
-  descriptorIn = open(infile, O_RDONLY);
-  descriptorOut = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0700);
+  descriptorIn = open(fd_from, O_RDONLY);
+  descriptorOut = open(fd_to, O_WRONLY|O_CREAT|O_TRUNC, 0700);
 
   /* Copying files */
   while ((numbytes = read(descriptorIn, &buffer, sizeof(char))) > 0){
@@ -56,7 +56,18 @@ int m_option (char const *infile, char const *outfile) {
   return 0;
 }
 
-int main(int argc, char const *argv[]) {
+int copy_mmap(char *fd_from, char *fd_to) {
+  /*
+  Not implemented yet
+  */
+  return 0;
+}
+
+int main(int argc, char *argv[]) {
+  /*  Using getopt()
+  printf("testing getopt: %d\n", getopt(argc,argv,":hm"));
+  */
+  /*  Not using getopt():  */
   if (argc < 2) {
     /* Returns error code 1 which means no options given. */
     return error_msg("No options given", argv[NAME], 1);
@@ -85,16 +96,10 @@ int main(int argc, char const *argv[]) {
 
     if (strcmp(argv[OPTIONS],"-m") == 0) {
       /* use of read and write */
-      m_option(argv[INFILE],argv[OUTFILE]);
+      copy_read_write(argv[INFILE],argv[OUTFILE]);
     } else {
-      /*
-
-      Not implemented yet
-
-      */
-      for (int i = 0; i < argc; i++) {
-        printf("arguments: %s\n", argv[i]);
-      }
+      /* use of nmap */
+      copy_mmap(argv[INFILE],argv[OUTFILE]);
     }
   }
   return 0;
