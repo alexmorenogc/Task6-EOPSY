@@ -35,31 +35,49 @@ int error_msg(char *message, char *name, int error_code) {
   return error_code;
 }
 
-int copy_read_write (char *fd_from, char *fd_to) {
-  int descriptorIn, descriptorOut;
+int copy_read_write (int fd_from, int fd_to) {
   char buffer[BUFFERSIZE];
   int numbytes;
 
-  /* Opening files */
-  descriptorIn = open(fd_from, O_RDONLY);
-  descriptorOut = open(fd_to, O_WRONLY|O_CREAT|O_TRUNC, 0700);
-
-  /* Copying files */
-  while ((numbytes = read(descriptorIn, &buffer, sizeof(char))) > 0){
-    write(descriptorOut, &buffer, numbytes);
+  while ((numbytes = read(fd_from, &buffer, sizeof(char))) > 0){
+    write(fd_to, &buffer, numbytes);
   }
-
-  /* Closing files */
-  close(descriptorIn);
-  close(descriptorOut);
 
   return 0;
 }
 
-int copy_mmap(char *fd_from, char *fd_to) {
+int copy_mmap(char fd_from, char fd_to) {
   /*
   Not implemented yet
   */
+
+  int sfd, dfd;
+  char *src, *dest;
+  size_t filesize;
+
+  /* SOURCE */
+  sfd = open("hello.c", O_RDONLY);
+  filesize = lseek(sfd, 0, SEEK_END);
+
+  src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, sfd, 0);
+
+  /* DESTINATION */
+  dfd = open("dest", O_RDWR | O_CREAT, 0666);
+
+  ftruncate(dfd, filesize);
+
+  dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, dfd, 0);
+
+  /* COPY */
+
+  memcpy(dest, src, filesize);
+
+  munmap(src, filesize);
+  munmap(dest, filesize);
+
+  close(sfd);
+  close(dfd);
+
   return 0;
 }
 
@@ -94,13 +112,22 @@ int main(int argc, char *argv[]) {
       return error_msg("Too many arguments winyo", argv[NAME], 3);
     }
 
+    int fd_from, fd_to;
+    /* Opening files */
+    fd_from = open(argv[INFILE], O_RDONLY);
+    fd_to = open(argv[OUTFILE], O_WRONLY|O_CREAT|O_TRUNC, 0700);
+
     if (strcmp(argv[OPTIONS],"-m") == 0) {
       /* use of read and write */
-      copy_read_write(argv[INFILE],argv[OUTFILE]);
+      copy_read_write(fd_from,fd_to);
     } else {
       /* use of nmap */
-      copy_mmap(argv[INFILE],argv[OUTFILE]);
+      //copy_mmap(argv[INFILE],argv[OUTFILE]);
     }
+
+    /* Closing files */
+    close(fd_from);
+    close(fd_to);
   }
   return 0;
 }
