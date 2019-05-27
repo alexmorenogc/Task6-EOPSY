@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define NAME 0
 #define OPTIONS 1
@@ -16,7 +17,7 @@
 
 int help(char *name) {
   printf("usage:\n"
-  " %s  [-h|--help] [-m] <file_name> <new_file_name>\n"
+  " %s  [-h] [-m] <file_name> <new_file_name>\n"
   "\n"
   "   Copy files using read() or write() or not (-m to use them)\n"
   "   if not, it will use mmap() and memcpy()\n"
@@ -76,9 +77,65 @@ int copy_mmap(int fd_from, int fd_to) {
   return 0;
 }
 
+void check_arguments(int arguments, int how_many, char *name) {
+  if (arguments > how_many) {
+    // Returns error code 3 which means too many arguments
+    exit (error_msg("Too many arguments winyo", name, 3));
+  } else if (arguments < how_many) {
+    //  Returns error code 4 which means not enough arguments
+    exit (error_msg("Not enough arguments winyo", name, 4));
+  }
+}
+
 int main(int argc, char *argv[]) {
   //  Using getopt()
-  printf("testing getopt: %d\n", getopt(argc,argv,":hm"));
+  int opt = getopt(argc, argv, "mh");
+
+  if (opt == 'h') {
+    return help(argv[NAME]);
+  }
+
+  // Checking 2 filenames
+  if (opt != -1) {
+    check_arguments(argc,4,argv[NAME]);
+  } else {
+    check_arguments(argc,3,argv[NAME]);
+  }
+
+  // Both file descriptors
+  int fd_from, fd_to;
+  fd_from = open(argv[optind], O_RDONLY);
+  fd_to = open(argv[optind + 1], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+  // if file doesn't exists
+  if (fd_from == -1) {
+    return error_msg("Error opening the file to be copied", argv[NAME], 6);
+  }
+
+  if (opt != -1) {
+    switch (opt) {
+      case 'm':
+        // use of copy_mmap
+        if (copy_mmap(fd_from,fd_to) == 0) {
+            printf("File %s copied as %s successfully\n", argv[optind], argv[optind + 1]);
+        } else {
+          return error_msg("Error copying the files", argv[NAME], 5);
+        }
+          break;
+      case '?':
+        return error_msg("Bad option", argv[NAME], 1);
+    }
+  } else {
+    if (copy_read_write(fd_from,fd_to) == 0) {
+      printf("File %s copied as %s successfully\n", argv[optind], argv[optind + 1]);
+    } else {
+      return error_msg("Error copying the files", argv[NAME], 5);
+    }
+  }
+
+  // Closing files
+  close(fd_from);
+  close(fd_to);
 
   /*
 
