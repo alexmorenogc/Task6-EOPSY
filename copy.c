@@ -138,7 +138,6 @@ int main(int argc, char *argv[]) {
   close(fd_to);
 
   /*
-
   // Not using getopt() working propertly:
 
   if (argc < 2) {
