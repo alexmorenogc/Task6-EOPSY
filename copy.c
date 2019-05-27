@@ -31,7 +31,12 @@ int help(char *name) {
 }
 
 int error_msg(char *message, char *name, int error_code) {
-  printf("%s, see help: %s -h\n", message, name);
+  if (name != NULL) {
+    printf("%s, see help: %s -h\n", message, name);
+  } else {
+    printf("%s\n", message);
+  }
+
   return error_code;
 }
 
@@ -50,17 +55,19 @@ int copy_mmap(int fd_from, int fd_to) {
   void *src, *dest;
   size_t filesize;
 
+  printf("function copy_mmap: %d %d\n", fd_from, fd_to);
+
   filesize = lseek(fd_from, 0, SEEK_END);
   lseek(fd_to, filesize - 1, SEEK_SET);
   write(fd_to, '\0', 1);
 
-  if ((src = mmap(0, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0)) == (void *) -1) {
-    error_msg("Error mapping in file","copy",4);
+  if ((src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0)) == (void *) -1) {
+    return error_msg("Error mapping in file",NULL,4);
   }
   //src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0);
   ftruncate(fd_to, filesize);
-  if ((dest = mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0)) == (void *) -1) {
-    error_msg("Error mapping in file","copy",4);
+  if ((dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0)) == (void *) -1) {
+    return error_msg("Error mapping in file",NULL,4);
   }
   //dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0);
 
@@ -106,16 +113,31 @@ int main(int argc, char *argv[]) {
     /* Both file descriptors */
     int fd_from, fd_to;
 
-    /* Opening files */
-    fd_from = open(argv[INFILE], O_RDONLY);
-    fd_to = open(argv[OUTFILE], O_WRONLY|O_CREAT|O_TRUNC, 0700);
-
     if (strcmp(argv[OPTIONS],"-m") == 0) {
+      /* Opening files */
+      fd_from = open(argv[INFILE], O_RDONLY);
+      fd_to = open(argv[OUTFILE], O_WRONLY|O_CREAT|O_TRUNC, 0700);
+      printf("function main: %d %d\n", fd_from, fd_to);
+
       /* use of read and write */
-      copy_read_write(fd_from,fd_to);
+      if (copy_read_write(fd_from,fd_to) == 0) {
+        printf("File %s copied as %s successfully\n", argv[INFILE], argv[OUTFILE]);
+      } else {
+        return error_msg("Error copying the files", argv[NAME], 5);
+      }
+
     } else {
+      /* Opening files */
+      fd_from = open(argv[INFILE - 1], O_RDONLY);
+      fd_to = open(argv[OUTFILE - 1], O_WRONLY|O_CREAT|O_TRUNC, 0700);
+      printf("function main: %d %d\n", fd_from, fd_to);
+
       /* use of nmap */
-      copy_mmap(fd_from,fd_to);
+      if (copy_mmap(fd_from,fd_to) == 0) {
+        printf("File %s copied as %s successfully\n", argv[INFILE], argv[OUTFILE]);
+      } else {
+        return error_msg("Error copying the files", argv[NAME], 5);
+      }
     }
 
     /* Closing files */
