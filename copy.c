@@ -36,7 +36,6 @@ int error_msg(char *message, char *name, int error_code) {
   } else {
     printf("%s\n", message);
   }
-
   return error_code;
 }
 
@@ -53,23 +52,20 @@ int copy_read_write (int fd_from, int fd_to) {
 
 int copy_mmap(int fd_from, int fd_to) {
   void *src, *dest;
-  size_t filesize;
+  struct stat s;
+  int filesize;
 
-  printf("function copy_mmap: %d %d\n", fd_from, fd_to);
+  int status = fstat (fd_from, &s);
+  filesize = s.st_size;
 
-  filesize = lseek(fd_from, 0, SEEK_END);
-  lseek(fd_to, filesize - 1, SEEK_SET);
-  write(fd_to, '\0', 1);
-
-  if ((src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0)) == (void *) -1) {
+  if ((src = mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd_from, 0)) == (void *) -1) {
     return error_msg("Error mapping in file",NULL,4);
   }
-  //src = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd_from, 0);
   ftruncate(fd_to, filesize);
+
   if ((dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0)) == (void *) -1) {
-    return error_msg("Error mapping in file",NULL,4);
+    return error_msg("Error mapping destination file",NULL,4);
   }
-  //dest = mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd_to, 0);
 
   memcpy(dest, src, filesize);
 
@@ -81,68 +77,79 @@ int copy_mmap(int fd_from, int fd_to) {
 }
 
 int main(int argc, char *argv[]) {
-  /*  Using getopt()
+  //  Using getopt()
   printf("testing getopt: %d\n", getopt(argc,argv,":hm"));
-  */
-  /*  Not using getopt():  */
+
+  /*
+
+  // Not using getopt() working propertly:
+
   if (argc < 2) {
-    /* Returns error code 1 which means no options given. */
+    // Returns error code 1 which means no options given.
     return error_msg("No options given", argv[NAME], 1);
   } else if (argc == 2) {
     if (strcmp(argv[OPTIONS],"-h") == 0 || strcmp(argv[OPTIONS],"--help") == 0) {
       return help(argv[NAME]);
     } else {
-      /* Returns error code 2 which menas bad option */
+      // Returns error code 2 which menas bad option
       return error_msg("Bad option", argv[NAME], 2);
     }
   } else {
-    /* It is possible to do -h and more arguments, so we checked again */
+    // It is possible to do -h and more arguments, so we checked again
     if (strcmp(argv[OPTIONS],"-h") == 0 || strcmp(argv[OPTIONS],"--help") == 0) {
-      /* Returns error code 2 which means bad option */
+      // Returns error code 2 which means bad option
       return error_msg("Bad option", argv[NAME], 2);
-      /* Another way could be, showing help and not error_msg:
-      return help(argv[NAME]);
-      */
+      // Another way could be, showing help and not error_msg:
+      //return help(argv[NAME]);
     }
-    /* Checking too many arguments (no more than 2 files) */
+    // Checking too many arguments (no more than 2 files)
     if (argc > 4 && strcmp(argv[OPTIONS],"-m") == 0 ||
         argc > 3 && strcmp(argv[OPTIONS],"-m") != 0) {
-      /* Returns error code 3 which means too many arguments */
+      // Returns error code 3 which means too many arguments
       return error_msg("Too many arguments winyo", argv[NAME], 3);
     }
-    /* Both file descriptors */
+    // Both file descriptors
     int fd_from, fd_to;
 
+    // Opening files
     if (strcmp(argv[OPTIONS],"-m") == 0) {
-      /* Opening files */
       fd_from = open(argv[INFILE], O_RDONLY);
       fd_to = open(argv[OUTFILE], O_WRONLY|O_CREAT|O_TRUNC, 0700);
-      printf("function main: %d %d\n", fd_from, fd_to);
+    } else {
+      fd_from = open(argv[INFILE - 1], O_RDONLY);
+      fd_to = open(argv[OUTFILE - 1 ], O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    }
 
-      /* use of read and write */
+    // if file doesn't exists
+    if (fd_from == -1) {
+      return error_msg("Error opening the file to be copied", argv[NAME], 6);
+    }
+
+    // Calling functions
+    if (strcmp(argv[OPTIONS],"-m") == 0) {
+      // use of read and write
       if (copy_read_write(fd_from,fd_to) == 0) {
         printf("File %s copied as %s successfully\n", argv[INFILE], argv[OUTFILE]);
       } else {
         return error_msg("Error copying the files", argv[NAME], 5);
       }
-
     } else {
-      /* Opening files */
-      fd_from = open(argv[INFILE - 1], O_RDONLY);
-      fd_to = open(argv[OUTFILE - 1], O_WRONLY|O_CREAT|O_TRUNC, 0700);
-      printf("function main: %d %d\n", fd_from, fd_to);
-
-      /* use of nmap */
+      // use of nmap
       if (copy_mmap(fd_from,fd_to) == 0) {
-        printf("File %s copied as %s successfully\n", argv[INFILE], argv[OUTFILE]);
+        if (strcmp(argv[OPTIONS],"-m") == 0) {
+          printf("File %s copied as %s successfully\n", argv[INFILE], argv[OUTFILE]);
+        } else {
+          printf("File %s copied as %s successfully\n", argv[INFILE -1], argv[OUTFILE -1]);
+        }
       } else {
         return error_msg("Error copying the files", argv[NAME], 5);
       }
     }
 
-    /* Closing files */
+    // Closing files
     close(fd_from);
     close(fd_to);
   }
+  */
   return 0;
 }
