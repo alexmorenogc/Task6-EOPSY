@@ -43,9 +43,13 @@ int error_msg(char *message, char *name, int error_code) {
 int copy_read_write (int fd_from, int fd_to) {
   char buffer[BUFFERSIZE];
   int numbytes;
+  int error_wrinting;
 
   while ((numbytes = read(fd_from, &buffer, sizeof(char))) > 0){
-    write(fd_to, &buffer, numbytes);
+    error_wrinting = write(fd_to, &buffer, numbytes);
+    if (numbytes == -1 || error_wrinting == -1) {
+      return error_msg("Error copying file",NULL,7);
+    }
   }
 
   return 0;
